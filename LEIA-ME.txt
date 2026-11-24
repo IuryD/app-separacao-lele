@@ -165,3 +165,6 @@ SEGURANÇA – O QUE SABER
   - projeto Be Honest (v12/v13 de lá): acumulado do mês por condomínio no index.html; religar automático dos lançamentos "fora da tabela"; recarga da tabela quando o gerente importa outra.
   - projeto Perda/Uso e consumo (v12/v13 de cá): botões de uso e consumo com custo; busca por nome com o nome exato primeiro; custo pelo nome; botões batata doce, goiaba e pimenta de cheiro.
 - REGRA DAQUI PRA FRENTE: a única cópia oficial do app é Lele Obsidian\06 FB Mercados\App Separacao. Toda mudança parte dela e volta para ela antes de publicar. A versão vai no CACHE do sw.js (separacao-vNN) e aqui no LEIA-ME.
+
+=== v15 (24/11/2026) — projeto Perda/Uso e consumo ===
+- Correção automática dos lançamentos "fora da tabela" (roda com o gerente logado) também reconhece pelo nome (ex.: GOIABA -> GOIABA KG 96549, BATATA DOCE -> BATATA DOCE KG 250) e grava código, unidade e custo.

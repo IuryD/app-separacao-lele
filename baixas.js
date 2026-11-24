@@ -210,9 +210,9 @@
     if (!alvo.length) return;
     const b0 = S.db.batch(); let n = 0;
     for (const b of alvo){
-      const p = (b.ean && BX.porEan.get(String(b.ean).replace(/^0+/, ''))) || (b.cod && BX.porCod.get(b.cod)) || null;
+      const p = (b.ean && BX.porEan.get(String(b.ean).replace(/^0+/, ''))) || (b.cod && BX.porCod.get(b.cod)) || porNome(b.desc) || null;
       if (!p || !p.desc) continue;
-      const up = {fora: false, desc: p.desc, cod: p.cod || b.cod || '', custo: b.custo || p.custo || 0};
+      const up = {fora: false, desc: p.desc, cod: p.cod || b.cod || '', un: p.un || b.un || 'UN', custo: b.custo || p.custo || 0};
       if (!b.ean && p.ean) up.ean = p.ean;
       b0.update(S.db.collection('baixas').doc(b.id), up); Object.assign(b, up); n++;
     }
