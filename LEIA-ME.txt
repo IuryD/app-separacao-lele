@@ -1,0 +1,167 @@
+APP DE SEPARAÇÃO DE PEDIDOS – PASSO A PASSO
+===========================================
+
+Arquivos desta pasta:
+  index.html            o app
+  config.js             SUAS configurações (nome, e-mail do gerente, Firebase)
+  manifest.json, sw.js  deixam o app instalável no celular
+  icon-*.png            ícones
+  firestore.rules       regras de segurança para colar no Firebase
+
+
+ETAPA 1 – TESTAR JÁ NO CELULAR (modo local, uns 5 minutos)
+----------------------------------------------------------
+Neste modo os pedidos ficam salvos só no próprio celular. Serve para testar o fluxo.
+
+1. No computador, descompacte o zip.
+2. Abra https://app.netlify.com/drop e crie uma conta grátis (sem conta, o link
+   expira em 1 hora).
+3. Arraste a PASTA "separacao-app" para a página. Ele gera um link do tipo
+   https://nome-qualquer.netlify.app. Em "Site configuration > Change site name"
+   você pode trocar por algo como separacao-lele.netlify.app.
+4. No celular Android, abra o link no Chrome > menu (3 pontinhos) >
+   "Instalar app" (ou "Adicionar à tela inicial").
+   Pronto: ícone na tela, abre em tela cheia, e o botão 📷 lê código pela câmera.
+5. Para importar a pick list no celular, baixe a planilha (do WhatsApp/e-mail)
+   e toque em "Escolher planilha".
+
+
+ETAPA 2 – LIGAR O FIREBASE (sincronizar celulares + senha de gerente)
+---------------------------------------------------------------------
+>>> JÁ FEITO: projeto "separacao-lele" criado, banco em São Paulo, regras
+>>> publicadas, login anônimo + e-mail/senha ligados, config.js preenchido,
+>>> gerente = iury707@gmail.com. Pule direto para "Publicar" abaixo.
+
+Grátis (plano Spark). O uso de vocês fica muito abaixo do limite gratuito.
+
+1. Entre em https://console.firebase.google.com com uma conta Google >
+   "Criar projeto" > nome: separacao-lele > pode desativar o Google Analytics.
+
+2. Menu "Criação" (Build) > Authentication > "Vamos começar":
+   - Aba "Método de login": ative "Anônimo" e ative "E-mail/senha".
+   - Aba "Usuários" > "Adicionar usuário": seu e-mail e uma senha.
+     (essa é a senha que libera os pedidos)
+
+3. Menu "Criação" > Firestore Database > "Criar banco de dados":
+   - Local: southamerica-east1 (São Paulo)
+   - Iniciar no "modo de produção"
+   - Aba "Regras": apague tudo, cole o conteúdo do arquivo firestore.rules,
+     troque seu-email@exemplo.com pelo seu e-mail e clique "Publicar".
+
+4. Engrenagem (Configurações do projeto) > "Seus apps" > ícone  </>  (Web) >
+   apelido "separacao" > Registrar app. Ele mostra um bloco "firebaseConfig".
+   Abra config.js no Bloco de Notas e copie cada valor (apiKey, authDomain,
+   projectId, storageBucket, messagingSenderId, appId) para o lugar certo.
+   No mesmo arquivo, troque o e-mail em "gerentes". Salve.
+
+5. Authentication > Configurações > "Domínios autorizados" > Adicionar domínio:
+   o endereço do Netlify (ex.: separacao-lele.netlify.app, sem https://).
+
+6. No Netlify, abra o site > "Deploys" > arraste a pasta de novo para atualizar.
+
+7. No app, toque no selo do topo ("Separador · entrar") e entre com seu e-mail
+   e senha. Ele passa a mostrar "Gerente ✓" e o botão "Liberar pedido" aparece.
+   Os separadores NÃO entram com nada: só abrem o app.
+
+ATENÇÃO: os pedidos que você criou no modo local NÃO passam para o Firebase.
+Depois de ligar o Firebase, importe a planilha de novo.
+
+
+ETAPA 3 – GERAR O APK (opcional)
+--------------------------------
+O app instalado pelo Chrome (Etapa 1, passo 4) já funciona como app. Se quiser
+um arquivo .apk para instalar em coletores ou outros celulares:
+
+1. Abra https://www.pwabuilder.com, cole o link do Netlify e clique "Start".
+2. "Package for stores" > Android > "Generate Package".
+3. Ele baixa um zip. Dentro tem um arquivo .apk: mande para o celular e instale
+   (o Android vai pedir para permitir instalar de "fontes desconhecidas").
+
+O APK abre o seu site. Quando você atualizar o site no Netlify, o app atualiza
+sozinho, sem precisar reinstalar.
+
+
+RECEBER A PICK LIST PELO COMPUTADOR (WhatsApp Web / Desktop)
+------------------------------------------------------------
+1. Abra o link do app no Chrome do computador (dá para "Instalar app" também:
+   ícone de computador com seta, na barra de endereço).
+2. No WhatsApp Web, clique na planilha para baixar.
+3. Arraste o arquivo baixado (da barra de downloads do Chrome ou da pasta
+   Downloads) para dentro do app. Ou clique em "Escolher planilha".
+Com o Firebase ligado, os pedidos aparecem na hora nos celulares.
+
+
+RECEBER A PICK LIST DIRETO DO WHATSAPP (celular Android)
+-------------------------------------------------------
+Depois que o app estiver INSTALADO no celular (Chrome > "Instalar app", ou o APK):
+1. No WhatsApp, segure o dedo em cima da planilha que a Be Honest mandou.
+2. Toque em Compartilhar (ícone ⋮ ou a setinha) > escolha "Separação".
+3. O app abre e importa sozinho: um pedido por loja.
+Com o Firebase ligado, os pedidos aparecem na hora no celular de todos os
+separadores. Então instale o app também no SEU celular, onde chega o WhatsApp.
+(Se "Separação" não aparecer na lista, desinstale e instale o app de novo
+depois de atualizar o site no Netlify.)
+
+
+TABELA DE-PARA (EAN Be Honest -> produto Lelê)
+-----------------------------------------------
+Na tela inicial, entre como gerente e toque em "Atualizar tabela". Escolha a
+planilha depara_be_honest_lele.xlsx (aba "Tabela app").
+Com a tabela carregada:
+- cada item mostra "Lelê: código – descrição" (ou "Sem cadastro no Lelê");
+- o separador pode bipar o EAN da Be Honest OU o EAN do produto Lelê;
+- a lista para o PDV sai com o código e o EAN do Lelê (não o da Be Honest).
+Quando a tabela mudar, é só importar a planilha nova.
+
+
+COMO USAR NO DIA A DIA
+----------------------
+1. Importar a pick list (pelo Compartilhar do WhatsApp ou "Escolher planilha")
+   > vira um pedido por loja.
+2. "Lista consolidada": pegue cada produto uma vez no estoque, com o total.
+3. Abra o pedido da loja e bipe cada item (leitor, câmera 📷 ou "✓ Tudo"/"Faltou").
+4. "Terminei a separação" > o gerente vê só as faltas e toca "Liberar pedido".
+5. Copie ou baixe a lista de códigos e quantidades para lançar no sistema,
+   e mande as faltas para o cliente pelo botão do WhatsApp.
+
+
+SEGURANÇA – O QUE SABER
+-----------------------
+- Qualquer pessoa com o link consegue abrir e marcar a separação, mas só quem
+  entrar com o e-mail de gerente consegue liberar, desfazer liberação ou excluir.
+  Não divulgue o link fora da equipe.
+- Não coloque a senha do gerente no config.js. Ela fica só no Firebase.
+
+
+=== v6 (23/11/2026) — Perda e uso e consumo ===
+- Tela inicial agora tem 2 opções: Separação e Perda e uso e consumo.
+- Código da tela nova: baixas.js (carregado no fim do index.html).
+- Link direto para os funcionários: .../#baixas
+- Dados: coleção "baixas" (status pendente/lancado) e "produtosLele" (tabela de produtos do Avanço).
+- Regras já publicadas no Firebase em 23/11 (cópia em firestore.rules).
+
+=== v7 (23/11/2026) ===
+- Painel do gerente na tela inicial: logo do Lelê, pedidos e valor a cobrar da Be Honest, perda e uso e consumo do mês, perda por dia e produtos que mais perdemos.
+- Logo: logo-lele.png (recortado da arte institucional).
+
+=== v8 (23/11/2026) ===
+- Importar produtos aceita a planilha lista_produtos_clube do Avanço (BARRAS, DESCRICAO, PRECO_CUSTO). Código curto no BARRAS = código interno (ex.: 209 tomate).
+- Tabela fica guardada no celular e só baixa de novo quando o gerente importar outra.
+
+=== v9 (23/11/2026) — Recebimento hortifruti ===
+- Nova aba na tela inicial: pesagem do hortifruti na chegada (produto + peso), com login por PIN de 4 dígitos.
+- PINs: o gerente cadastra/remove na própria aba (ficam em config/pinsHorti, guardados como hash). Sessão dura 12 h no aparelho.
+- Link direto: .../#horti
+- Dados: coleção hortiEntradas. Painel do gerente cruza recebido x perdido no mês (% de perda e custo real por kg).
+
+=== v10 (24/11/2026) ===
+- Lançamento sem custo usa o custo da tabela de produtos importada (painel, pendentes e recebido x perdido).
+
+=== v11 (24/11/2026) ===
+- Custo do dia do hortifruti: a rotina "CEASA ALTERADO" grava os custos em config/custosHorti e o app usa esses valores (lançamentos novos e painel).
+
+=== v14 (24/11/2026) — JUNÇÃO ===
+- Juntou as duas linhas que saíram da v11:
+  - projeto Be Honest (v12/v13 de lá): acumulado do mês por condomínio no index.html; religar automático dos lançamentos "fora da tabela"; recarga da tabela quando o gerente importa outra.
+  - projeto Perda/Uso e consumo (v12/v13 de cá): botões de uso e consumo com custo; busca por nome com o nome exato primeiro; custo pelo nome; botões batata doce, goiaba e pimenta de cheiro.
+- REGRA DAQUI PRA FRENTE: a única cópia oficial do app é Lele Obsidian\06 FB Mercados\App Separacao. Toda mudança parte dela e volta para ela antes de publicar. A versão vai no CACHE do sw.js (separacao-vNN) e aqui no LEIA-ME.

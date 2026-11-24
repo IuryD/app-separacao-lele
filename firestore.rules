@@ -1,0 +1,68 @@
+rules_version = '2';
+// Regras de segurança do banco (Firebase > Firestore Database > Regras).
+// TROQUE iury707@gmail.com pelo e-mail do gerente (o mesmo do config.js).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function logado()  { return request.auth != null; }
+    function gerente() {
+      return logado() && request.auth.token.email in ['iury707@gmail.com'];
+    }
+
+    // Pedidos: qualquer aparelho com o app lê e marca a separação.
+    // Só o gerente exclui.
+    match /pedidos/{id} {
+      allow read, create, update: if logado();
+      allow delete: if gerente();
+    }
+
+    // Tabela de-para (EAN Be Honest -> produto Lelê): todos leem, só o gerente atualiza.
+    match /depara/{id} {
+      allow read: if logado();
+      allow write: if gerente();
+    }
+
+    // Tamanho do fardo por produto e configurações (N da sugestão): todos leem, só o gerente altera.
+    match /fardos/{id} {
+      allow read: if logado();
+      allow write: if gerente();
+    }
+    match /config/{id} {
+      allow read: if logado();
+      allow write: if gerente();
+    }
+
+    // Histórico do relatório do gerente: só o gerente.
+    match /historico/{id} {
+      allow read, write: if gerente();
+    }
+
+    // Liberação: todos veem, só o gerente libera ou desfaz.
+    match /liberacoes/{id} {
+      allow read: if logado();
+      allow write: if gerente();
+    }
+  
+
+    // Perda e uso e consumo: qualquer aparelho com o app lanca e apaga enquanto pendente.
+    // So o gerente marca como lancado.
+    match /baixas/{id} {
+      allow read, create: if logado();
+      allow delete: if logado() && resource.data.status == 'pendente';
+      allow update: if gerente();
+    }
+
+    // Tabela de produtos do Avanco: todos leem, so o gerente importa.
+    match /produtosLele/{id} {
+      allow read: if logado();
+      allow write: if gerente();
+    }
+  
+
+    // Recebimento do hortifruti (pesagem na chegada): qualquer aparelho com o app pesa e apaga.
+    match /hortiEntradas/{id} {
+      allow read, create, delete: if logado();
+      allow update: if gerente();
+    }
+  }
+}
