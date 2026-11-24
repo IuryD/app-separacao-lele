@@ -168,3 +168,4 @@ SEGURANÇA – O QUE SABER
 
 === v15 (24/11/2026) — projeto Perda/Uso e consumo ===
 - Correção automática dos lançamentos "fora da tabela" (roda com o gerente logado) também reconhece pelo nome (ex.: GOIABA -> GOIABA KG 96549, BATATA DOCE -> BATATA DOCE KG 250) e grava código, unidade e custo.
+publicado 24/11
