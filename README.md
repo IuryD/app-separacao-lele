@@ -15,5 +15,8 @@ O app (https://capable-squirrel-dfd4f1.netlify.app) é **um só** e é usado por
 ## Versão atual
 - **v14** (24/11/2026, cache `separacao-v18`): junção das duas linhas. Ver `LEIA-ME.txt`.
 
+## Publicação
+- Repositório **público** desde 24/11/2026 (plano grátis do Netlify só publica automaticamente envios de qualquer autor em repositório público). Se o app virar produto pago, passar para privado + plano pago do Netlify.
+
 ## Próximo passo recomendado
 Ligar o app a um repositório no GitHub com publicação automática no Netlify: cada mudança vira um registro, as duas linhas se juntam sozinhas e nada se perde.
