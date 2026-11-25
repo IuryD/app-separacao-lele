@@ -206,3 +206,10 @@ publicado 24/11
 - Link direto: .../#validade · Código: validade.js (carregado depois do contagem.js).
 - Dados: coleção "validade". PRECISA publicar a regra "validade" no Firebase (cópia em firestore.rules).
 
+=== v20 (25/11/2026, cache separacao-v24) — projeto Perda/Uso e consumo — economia da cota do Firebase ===
+- Em 25/11 o banco passou de 900 mil leituras em 24 h (limite grátis: 50 mil/dia) e travou até zerar a cota.
+- index.html: pedidos, liberações, tabela de-para e fardos só são baixados quando alguém abre a Separação
+  (ou quando o gerente está logado). Quem abre só Contagem, Validade, Perda ou Hortifruti não lê mais a de-para inteira.
+- contagem.js: a contagem mostra só os itens URGENTES da lista (compra da semana). Mesma rodada: o que já foi contado continua valendo.
+  Lista sem nenhum urgente marcado mostra tudo. "Zerar os não contados" também só mexe nos urgentes.
+

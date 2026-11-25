@@ -205,20 +205,27 @@ async function initStore(){
     S.uid = u.uid;
     S.admin = !u.isAnonymous && (CFG.gerentes || []).map(x=>x.toLowerCase()).includes((u.email||'').toLowerCase());
     $('#modeBadge').textContent = S.admin ? 'Gerente ✓' : 'Separador · entrar';
-    const timer = setTimeout(() => { if(!S.loaded) toast('Ainda não consegui carregar os pedidos. Verifique a internet.', 'warn'); }, 10000);
-    subs.push(S.db.collection('pedidos').onSnapshot({includeMetadataChanges:false}, snap => {
-      S.pedidos = new Map(snap.docs.map(d => [d.id, d.data()]));
-      S.loaded = true; clearTimeout(timer); render();
-    }, e => toast('Erro ao ler pedidos: ' + e.message, 'err')));
-    subs.push(S.db.collection('liberacoes').onSnapshot(snap => {
-      S.lib = new Map(snap.docs.map(d => [d.id, d.data()])); render();
-    }, () => {}));
-    subs.push(S.db.collection('depara').onSnapshot(snap => {
-      S.depara = new Map(snap.docs.map(d => [d.id, d.data()])); render();
-    }, () => {}));
-    subs.push(S.db.collection('fardos').onSnapshot(snap => {
-      S.fardos = new Map(snap.docs.map(d => [d.id, d.data()])); render();
-    }, () => {}));
+    // Pedidos, liberações, de-para e fardos só são baixados quando a separação é usada (ou pelo gerente):
+    // quem abre só Contagem, Validade, Perda ou Hortifruti não lê a tabela de-para inteira (economiza a cota do Firebase).
+    S.sepOn = false;
+    S.ligarSep = () => {
+      if (S.sepOn || !S.db) return; S.sepOn = true;
+      const timer = setTimeout(() => { if(!S.loaded) toast('Ainda não consegui carregar os pedidos. Verifique a internet.', 'warn'); }, 10000);
+      subs.push(S.db.collection('pedidos').onSnapshot({includeMetadataChanges:false}, snap => {
+        S.pedidos = new Map(snap.docs.map(d => [d.id, d.data()]));
+        S.loaded = true; clearTimeout(timer); render();
+      }, e => toast('Erro ao ler pedidos: ' + e.message, 'err')));
+      subs.push(S.db.collection('liberacoes').onSnapshot(snap => {
+        S.lib = new Map(snap.docs.map(d => [d.id, d.data()])); render();
+      }, () => {}));
+      subs.push(S.db.collection('depara').onSnapshot(snap => {
+        S.depara = new Map(snap.docs.map(d => [d.id, d.data()])); render();
+      }, () => {}));
+      subs.push(S.db.collection('fardos').onSnapshot(snap => {
+        S.fardos = new Map(snap.docs.map(d => [d.id, d.data()])); render();
+      }, () => {}));
+    };
+    if (S.admin || ['inicio','pedido','lote','relatorio'].includes(S.view) && !['#contagem','#validade','#baixas','#horti'].includes(location.hash)) S.ligarSep();
     subs.push(S.db.collection('config').doc('geral').onSnapshot(d => {
       S.cfg = Object.assign({nFardo: 2, descPadrao: 12, precos: {}, descLoja: {}}, d.exists ? d.data() : {}); render();
     }, () => {}));
@@ -783,6 +790,7 @@ $('#back').onclick = () => go('inicio');
 
 function render(){
   const app = $('#app');
+  if (S.ligarSep && ['inicio','pedido','lote','relatorio'].includes(S.view)) S.ligarSep();
   $('#back').classList.toggle('hide', S.view === 'inicio');
   if (S.view === 'pedido' && !S.pedidos.has(S.cur)) S.view = 'inicio';
   if (S.view === 'relatorio' && !S.admin) S.view = 'inicio';

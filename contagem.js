@@ -251,7 +251,10 @@
   const dig = s => String(s || '').replace(/\D/g, '');
   const lista = () => CT.lista || PADRAO;
   const rid = () => String(lista().rodada).replace(/[^\w-]/g, '');
-  const itens = () => lista().itens;
+  // Só os urgentes (produtos que entram na compra toda semana). A rodada continua a mesma,
+  // então o que já foi contado segue valendo. Lista sem nenhum urgente marcado: mostra tudo.
+  let urgRef = null, urgL = [];
+  const itens = () => { const L = lista().itens; if (L !== urgRef){ urgRef = L; const u = L.filter(i => i.p === 1); urgL = u.length ? u : L; } return urgL; };
   function indice(){
     const k = rid() + '|' + itens().length; if (CT.idxR === k) return;
     CT.idx = new Map(); CT.idxEan = new Map();
@@ -655,7 +658,7 @@
     const d = document.createElement('div');
     d.className = 'card pedido atalho'; d.id = 'ctAtalho'; d.onclick = () => go('contagem');
     d.innerHTML = `<div class="ic" style="background:#e4edf8">📋</div>
-      <div style="flex:1"><h3>Contagem de estoque</h3><div class="mut">Itens defasados · ${p.n} de ${p.total} contados · urgentes ${p.pf}/${p.pri}</div>
+      <div style="flex:1"><h3>Contagem de estoque</h3><div class="mut">Urgentes da compra · ${p.n} de ${p.total} contados · urgentes ${p.pf}/${p.pri}</div>
       <div class="bar" style="margin-bottom:0"><i style="width:${p.pct.toFixed(1)}%;background:#1d4f91"></i></div></div><b style="font-size:22px;color:var(--mut)">›</b>`;
     ats[ats.length - 1].after(d);
   }
