@@ -182,3 +182,12 @@ publicado 24/11
   Lista nova: aba Resultado > Importar nova lista (código, descrição, estoque; opcionais seção, código de barras, urgente).
 - Dados: coleção "contagem" (uma por item e rodada) e config/contagemLista.
 - Regra da coleção "contagem" publicada no Firebase em 24/11 (cópia em firestore.rules).
+
+=== v17 (24/11/2026, cache separacao-v21) — Contagem geral da loja ===
+- Lista grande (milhares de itens) fica em pedaços: config/contagemLista + config/contagemLista_p0, _p1...
+- Tela mostra 200 itens por vez: escolha a seção, busque pelo nome ou bipe.
+- Bipou produto que não está na lista: acha no cadastro de produtos do app e conta como "Fora da lista".
+- Coluna Obs na planilha: aparece no item. Código duplicado aparece em vermelho ("não contar aqui, conte no código X").
+- Resultado: filtro por seção (cópia para o inventário e planilha só da seção) e botão "Zerar os não contados" da seção.
+- Lista geral de 24/11: lista_contagem_geral_lele.xlsx (10.165 produtos com estoque no Avanço, por departamento,
+  141 urgentes, 405 códigos com nome repetido marcados na Obs). Importar em Contagem > Resultado > Importar nova lista.

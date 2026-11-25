@@ -11,8 +11,12 @@
    - Gerente, aba Resultado: sistema x contado, diferença e valor do ajuste,
      copiar #CONT (página de cotação), copiar para o inventário do Avanço,
      baixar planilha, importar nova lista, recomeçar.
-   - Lista: config/contagemLista (gerente importa). Sem lista importada,
-     usa a lista de 24/11 (209 itens: estoque negativo + alto suspeito).
+   - Lista: config/contagemLista (gerente importa). Lista grande fica em
+     pedaços: config/contagemLista_p0, _p1... (linhas c|d|s|p|g|ean|obs).
+     Sem lista importada, usa a lista de 24/11 (209 itens).
+   - Contagem geral: bipar produto que não está na lista conta como
+     "Fora da lista" (acha pelo cadastro de produtos do app). Gerente zera
+     os não contados de uma seção quando ela termina.
    ===================================================================== */
 (function(){
   if (typeof S === 'undefined' || typeof render !== 'function') return;
@@ -236,8 +240,8 @@
     cont: new Map(),            // cod -> {q, f, func, t}
     local: lsGet('ct.local', {}),   // contagens que não subiram (sem permissão / modo local)
     fat: lsGet('ct.fat', {}),       // cod -> unidades por fardo
-    sec: 'Todas', soPri: false, soFalta: false, busca: '', aba: 'contar', filtroRes: 'div',
-    atual: null, via: '', aviso: ''
+    sec: 'Todas', soPri: false, soFalta: false, busca: '', aba: 'contar', filtroRes: 'div', secRes: 'Todas', limite: 200,
+    atual: null, via: '', aviso: '', idxR: '', idx: new Map(), idxEan: new Map(), carregandoLista: false
   };
   window.CT = CT;
 
@@ -248,6 +252,14 @@
   const lista = () => CT.lista || PADRAO;
   const rid = () => String(lista().rodada).replace(/[^\w-]/g, '');
   const itens = () => lista().itens;
+  function indice(){
+    const k = rid() + '|' + itens().length; if (CT.idxR === k) return;
+    CT.idx = new Map(); CT.idxEan = new Map();
+    for (const i of itens()){ CT.idx.set(i.c, i); if (i.ean) CT.idxEan.set(dig(i.ean).replace(/^0+/, ''), i); }
+    CT.idxR = k;
+  }
+  // Contados que não estão na lista (bipados na contagem geral)
+  const extras = () => { indice(); const L = []; for (const [c, x] of CT.cont) if (x.extra && !CT.idx.has(c)) L.push({c, d: x.d || c, s: 0, p: 2, g: 'Fora da lista', ean: x.ean || '', o: '', extra: true}); return L; };
   const contado = c => { const x = CT.cont.get(c); return x && typeof x.q === 'number' ? x : null; };
   const custo = c => { try{ const p = window.BX && BX.porCod && BX.porCod.get(c); return (p && p.custo) || 0; }catch(e){ return 0; } };
   const quem = () => {
@@ -262,9 +274,20 @@
   function assinar(){
     if (!S.db || !S.uid){ juntarLocal(); return; }
     if (!CT.subL){
-      CT.subL = S.db.collection('config').doc('contagemLista').onSnapshot(d => {
-        const ant = rid();
-        CT.docLista = d.exists; CT.lista = d.exists && d.data().itens && d.data().itens.length ? d.data() : null;
+      CT.subL = S.db.collection('config').doc('contagemLista').onSnapshot(async d => {
+        const ant = rid(), x = d.exists ? d.data() : null;
+        CT.docLista = d.exists;
+        if (x && x.partes){
+          if (CT.lista && CT.lista.rodada === x.rodada && CT.lista.itens.length) return;
+          CT.carregandoLista = true; redesenhar(true);
+          try{
+            const docs = await Promise.all([...Array(x.partes).keys()].map(i => S.db.collection('config').doc('contagemLista_p' + i).get()));
+            const its = [];
+            docs.forEach(p => String((p.exists && p.data().txt) || '').split('\n').forEach(l => { if (!l) return; const [c, dd, s, pp, g, ean, o] = l.split('|'); its.push({c, d: dd, s: +s || 0, p: +pp || 2, g: g || 'Geral', ean: ean || '', o: o || ''}); }));
+            CT.lista = {...x, itens: its};
+          }catch(e){ CT.aviso = 'Não consegui baixar a lista da contagem (' + (e.code || e.message) + ').'; }
+          CT.carregandoLista = false;
+        } else CT.lista = x && x.itens && x.itens.length ? x : null;
         if (rid() !== ant){ CT.cont = new Map(); CT.atual = null; }
         assinarCont(); redesenhar(true);
       }, () => { assinarCont(); });
@@ -302,6 +325,7 @@
   function gravar(c, q, f){
     const func = quem(); if (!func) return false;
     const rec = {r: rid(), c, q: q == null ? null : +(+q).toFixed(3), f: f || CT.fat[c] || null, func, t: new Date().toISOString()};
+    indice(); if (!CT.idx.has(c)){ const it = (CT.atual && CT.atual.c === c) ? CT.atual : (CT.cont.get(c) || {}); rec.extra = true; rec.d = it.d || ''; rec.ean = it.ean || ''; }
     if (f) { CT.fat[c] = f; lsSet('ct.fat', CT.fat); }
     CT.cont.set(c, rec); subir(c, rec);
     return true;
@@ -309,21 +333,32 @@
 
   /* ---------- Bipar ---------- */
   function acharNaLista(code){
-    const c = dig(code); if (!c) return null;
-    const L = itens();
-    if (c.length <= 6) return L.find(i => i.c === c || i.c === String(+c)) || null;
+    const c = dig(code); if (!c) return null; indice();
+    if (c.length <= 6) return CT.idx.get(c) || CT.idx.get(String(+c)) || null;
     const e = c.replace(/^0+/, '');
-    let it = L.find(i => i.ean && dig(i.ean).replace(/^0+/, '') === e);
-    if (!it && window.BX && BX.porEan){ const p = BX.porEan.get(e); if (p && p.cod) it = L.find(i => i.c === p.cod); }
+    let it = CT.idxEan.get(e);
+    if (!it && window.BX && BX.porEan){ const p = BX.porEan.get(e); if (p && p.cod) it = CT.idx.get(p.cod); }
     return it || null;
   }
+  // Produto fora da lista: procura no cadastro de produtos do app
+  async function acharNoCadastro(code){
+    if (!window.BX) return null;
+    if ((!BX.prods || !BX.prods.length) && typeof BX.carregarProdutos === 'function'){ ctMsg('Procurando no cadastro de produtos…', 'warn'); try{ await BX.carregarProdutos(true); }catch(e){} }
+    const c = dig(code); let p = null;
+    if (c.length <= 6) p = BX.porCod && (BX.porCod.get(c) || BX.porCod.get(String(+c)));
+    else p = BX.porEan && BX.porEan.get(c.replace(/^0+/, ''));
+    if (!p || !p.desc) return null;
+    const cod = p.cod || ('EAN' + c.replace(/^0+/, ''));
+    return {c: cod, d: p.desc, s: 0, p: 2, g: 'Fora da lista', ean: p.ean || '', o: 'Não está na lista da contagem (estoque do sistema não veio na lista)', extra: true};
+  }
   function ctMsg(t, kind){ const m = $('#scanMsg'); if (m){ m.className = 'msg ' + kind; m.textContent = t; } }
-  function ctBipar(code, via){
-    const it = acharNaLista(code);
+  async function ctBipar(code, via){
+    let it = acharNaLista(code);
     const camAberta = !!$('#cam');
     if (camAberta && typeof fecharCamera === 'function') fecharCamera();
     CT.via = via || (camAberta ? 'cam' : 'leitor');
-    if (!it){ try{ beep(false); }catch(e){} ctMsg('Código ' + code + ' não está na lista desta contagem.', 'warn'); return; }
+    if (!it) it = await acharNoCadastro(code);
+    if (!it){ try{ beep(false); }catch(e){} ctMsg('Código ' + code + ' não está na lista nem no cadastro do app. Anote à parte (nome e quantidade).', 'warn'); return; }
     try{ beep(true); }catch(e){}
     ctMsg('✓ ' + it.d, 'ok'); abrirItem(it);
   }
@@ -343,12 +378,14 @@
     .ct-fd input{width:68px;font-size:18px;text-align:center;font-weight:700;padding:8px 4px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
     .ct-link{border:0;background:none;color:var(--blue);padding:4px 0;min-height:30px;font-size:13px;font-weight:600}
     .ct-urg{color:var(--red);font-weight:700}
+    .ct-obs{font-size:12px;color:var(--blue);margin-top:2px}.ct-obs.dup{color:var(--red);font-weight:700}
     .ct-res td{font-size:13px}.ct-res .pos{color:var(--green);font-weight:700}.ct-res .neg{color:var(--red);font-weight:700}`;
   if (!document.getElementById('ctCss')){ const st = document.createElement('style'); st.id = 'ctCss'; st.textContent = ESTILO; document.head.appendChild(st); }
 
   function progresso(){
-    const L = itens(), n = L.filter(i => contado(i.c)).length, pri = L.filter(i => i.p === 1), pf = pri.filter(i => contado(i.c)).length;
-    return {n, total: L.length, pri: pri.length, pf, pct: L.length ? n / L.length * 100 : 0};
+    const L = itens(); let n = 0, pri = 0, pf = 0;
+    for (const i of L){ const ok = !!contado(i.c); if (ok) n++; if (i.p === 1){ pri++; if (ok) pf++; } }
+    return {n, total: L.length, pri, pf, ext: extras().filter(i => contado(i.c)).length, pct: L.length ? n / L.length * 100 : 0};
   }
 
   function renderContagem(app){
@@ -377,10 +414,10 @@
     ligarAbas();
     const inp = $('#ctScan');
     inp.onkeydown = e => { if (e.key !== 'Enter') return; const v = inp.value.trim(); if (!v) return; if (/^\d+$/.test(v)){ inp.value = ''; CT.busca = ''; ctBipar(v, 'leitor'); desenharLista(); } };
-    inp.oninput = () => { CT.busca = /^\d+$/.test(inp.value.trim()) ? '' : inp.value.trim(); desenharLista(); };
+    inp.oninput = () => { CT.busca = /^\d+$/.test(inp.value.trim()) ? '' : inp.value.trim(); CT.limite = 200; desenharLista(); };
     $('#ctFil').onclick = e => { const f = e.target.closest('button')?.dataset.f; if (!f) return; if (f === 'pri') CT.soPri = !CT.soPri; else CT.soFalta = !CT.soFalta;
       $('#ctFil').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.f === 'pri' ? CT.soPri : CT.soFalta)); desenharLista(); };
-    $('#ctSecs').onclick = e => { const s = e.target.closest('button')?.dataset.s; if (!s) return; CT.sec = s; desenharLista(); };
+    $('#ctSecs').onclick = e => { const s = e.target.closest('button')?.dataset.s; if (!s) return; CT.sec = s; CT.limite = 200; desenharLista(); };
     ligarLista();
     desenharTopo(); desenharForm(); desenharLista();
   }
@@ -391,7 +428,7 @@
     const p = progresso();
     el.innerHTML = `<div class="ct-top"><b class="t">${esc(lista().nome || 'Contagem')}</b>
       <div class="bar"><i style="width:${p.pct.toFixed(1)}%"></i></div>
-      <div class="s"><b>${p.n} de ${p.total}</b> contados · urgentes <b>${p.pf} de ${p.pri}</b></div></div>
+      <div class="s">${CT.carregandoLista ? 'Baixando a lista da contagem…' : `<b>${p.n} de ${p.total}</b> contados${p.pri ? ` · urgentes <b>${p.pf} de ${p.pri}</b>` : ''}${p.ext ? ` · ${p.ext} fora da lista` : ''}`}</div></div>
       ${CT.aviso ? `<div class="msg warn" style="display:block;margin-bottom:10px">${esc(CT.aviso)}</div>` : ''}`;
   }
 
@@ -401,7 +438,8 @@
     const x = contado(it.c), fd = CT.fat[it.c] || '';
     el.innerHTML = `<div class="card" style="border:2px solid var(--blue)">
       <div style="font-weight:700;font-size:17px">${esc(it.d)}</div>
-      <div class="mut">Cód. ${esc(it.c)}${it.p === 1 ? ' · <span class="ct-urg">URGENTE</span>' : ''}${x ? ' · já contado: <b>' + fmt(x.q) + '</b> (' + esc(x.func) + ')' : ''}</div>
+      <div class="mut">Cód. ${esc(it.c)}${it.p === 1 ? ' · <span class="ct-urg">URGENTE</span>' : ''}${it.extra ? ' · <b>fora da lista</b>' : ' · ' + esc(it.g)}${x ? ' · já contado: <b>' + fmt(x.q) + '</b> (' + esc(x.func) + ')' : ''}</div>
+      ${it.o ? `<div class="ct-obs ${/^DUPLICADO/.test(it.o) ? 'dup' : ''}" style="font-size:14px">${esc(it.o)}</div>` : ''}
       <div class="ct-fd" style="margin-top:8px"><input id="ctF" inputmode="numeric" placeholder="0" aria-label="Fardos"> fardos de
         <input id="ctX" inputmode="numeric" placeholder="un" value="${fd}" aria-label="Unidades por fardo"> + <input id="ctS" inputmode="numeric" placeholder="0" aria-label="Soltas"> soltas</div>
       <div class="row" style="margin-top:8px;flex-wrap:nowrap">
@@ -426,20 +464,26 @@
 
   function visiveis(){
     const q = CT.busca.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').split(/\s+/).filter(Boolean);
-    return itens().filter(i => (CT.sec === 'Todas' || i.g === CT.sec) && (!CT.soPri || i.p === 1) && (!CT.soFalta || !contado(i.c))
+    const base = CT.sec === 'Fora da lista' ? extras() : itens();
+    return base.filter(i => (CT.sec === 'Todas' || i.g === CT.sec) && (!CT.soPri || i.p === 1) && (!CT.soFalta || !contado(i.c))
       && (!q.length || q.every(t => i.d.includes(t) || i.c === t)));
+  }
+  function contarSecs(base){
+    const m = new Map([['Todas', [0, 0]]]);
+    for (const i of base){ const ok = contado(i.c) ? 1 : 0; const a = m.get(i.g) || [0, 0]; a[0] += ok; a[1]++; m.set(i.g, a); const t = m.get('Todas'); t[0] += ok; t[1]++; }
+    return m;
   }
   function desenharSecs(){
     const el = $('#ctSecs'); if (!el) return;
-    const secs = ['Todas', ...new Set(itens().map(i => i.g))];
-    el.innerHTML = secs.map(s => { const n = itens().filter(i => s === 'Todas' || i.g === s); const f = n.filter(i => contado(i.c)).length;
-      return `<button data-s="${esc(s)}" class="${CT.sec === s ? 'on' : ''}">${esc(s)} · ${f}/${n.length}</button>`; }).join('');
+    const m = contarSecs(itens()); const ex = extras(); if (ex.length) m.set('Fora da lista', [ex.filter(i => contado(i.c)).length, ex.length]);
+    el.innerHTML = [...m.entries()].map(([s, [f, n]]) => `<button data-s="${esc(s)}" class="${CT.sec === s ? 'on' : ''}">${esc(s)} · ${f}/${n}</button>`).join('');
   }
   function linha(i){
     const x = contado(i.c), fd = CT.fat[i.c];
     return `<div class="item ${x ? 'ok' : ''}" data-c="${esc(i.c)}">
       <div><div class="d">${esc(i.d)}</div>
         <div class="e">Cód. ${esc(i.c)}${i.p === 1 ? ' · <span class="ct-urg">URGENTE</span>' : ''}${fd ? ' · fardo de ' + fmt(fd) : ''}${S.admin ? ' · sistema: ' + fmt(i.s) : ''}<span class="ct-quem">${x ? ' · ' + esc(x.func) : ''}</span></div>
+        ${i.o ? `<div class="ct-obs ${/^DUPLICADO/.test(i.o) ? 'dup' : ''}">${esc(i.o)}</div>` : ''}
         <button class="ct-link" data-fd="${esc(i.c)}">Contar por fardo</button></div>
       <input class="ct-n" inputmode="decimal" value="${x ? fmt(x.q) : ''}" placeholder="—" aria-label="Quantidade contada de ${esc(i.d)}">
       <div class="ct-fd hide" data-fdrow="${esc(i.c)}"><input data-k="f" inputmode="numeric" placeholder="0" aria-label="Fardos"> fardos de
@@ -449,8 +493,11 @@
     desenharSecs();
     const el = $('#ctLista'); if (!el) return;
     const vis = visiveis(); let h = '', last = '';
-    for (const i of vis){ if (i.g !== last){ h += `<div class="cat">${esc(i.g)}</div>`; last = i.g; } h += linha(i); }
+    if (CT.carregandoLista){ el.innerHTML = '<div class="mut" style="padding:16px 4px;text-align:center">Baixando a lista da contagem…</div>'; return; }
+    for (const i of vis.slice(0, CT.limite)){ if (i.g !== last){ h += `<div class="cat">${esc(i.g)}</div>`; last = i.g; } h += linha(i); }
+    if (vis.length > CT.limite) h += `<div style="text-align:center;margin:12px 0"><p class="mut">Mostrando ${CT.limite} de ${vis.length}. Escolha uma seção, busque pelo nome ou bipe o produto.</p><button id="ctMais">Mostrar mais ${Math.min(300, vis.length - CT.limite)}</button></div>`;
     el.innerHTML = h || '<div class="mut" style="padding:16px 4px;text-align:center">Nada para mostrar com esse filtro.</div>';
+    const mais = $('#ctMais'); if (mais) mais.onclick = () => { CT.limite += 300; desenharLista(); };
   }
   function ligarLista(){
     const el = $('#ctLista'); if (!el) return;
@@ -481,8 +528,9 @@
   }
 
   /* ---------- Resultado (gerente) ---------- */
-  function linhasRes(){
-    return itens().map(i => { const x = contado(i.c); const q = x ? x.q : null; const dif = x ? q - i.s : null; const cu = custo(i.c);
+  function linhasRes(todasSecoes){
+    const base = [...itens(), ...extras()].filter(i => todasSecoes || CT.secRes === 'Todas' || i.g === CT.secRes);
+    return base.map(i => { const x = contado(i.c); const q = x ? x.q : null; const dif = x ? q - i.s : null; const cu = custo(i.c);
       return {...i, q, dif, cu, val: dif != null ? dif * cu : 0, func: x ? x.func : '', t: x ? x.t : ''}; });
   }
   function desenharResultado(){
@@ -491,8 +539,12 @@
     const sobe = feitos.filter(r => r.val > 0).reduce((s, r) => s + r.val, 0), desce = feitos.filter(r => r.val < 0).reduce((s, r) => s + r.val, 0);
     const semCusto = feitos.filter(r => !r.cu).length, iguais = feitos.filter(r => Math.abs(r.dif) < 0.001).length;
     let ver = CT.filtroRes === 'faltam' ? R.filter(r => r.q == null) : CT.filtroRes === 'todos' ? feitos : feitos.filter(r => Math.abs(r.dif) >= 0.001);
-    ver = ver.slice().sort((a, b) => CT.filtroRes === 'faltam' ? (a.p - b.p || a.g.localeCompare(b.g)) : (Math.abs(b.val) - Math.abs(a.val) || Math.abs(b.dif) - Math.abs(a.dif)));
+    const totalVer = ver.length;
+    ver = ver.slice().sort((a, b) => CT.filtroRes === 'faltam' ? (a.p - b.p || a.g.localeCompare(b.g)) : (Math.abs(b.val) - Math.abs(a.val) || Math.abs(b.dif) - Math.abs(a.dif))).slice(0, 300);
+    const secs = contarSecs([...itens(), ...extras()]);
+    const faltamSec = CT.secRes !== 'Todas' ? R.filter(r => r.q == null && !r.extra).length : 0;
     el.innerHTML = `
+      <div class="tabs" id="ctResS">${[...secs.entries()].map(([s, [f, n]]) => `<button data-s="${esc(s)}" class="${CT.secRes === s ? 'on' : ''}">${esc(s)} · ${f}/${n}</button>`).join('')}</div>
       <div class="kpis4">
         <div class="kpi g"><div class="l">Contados</div><div class="v">${feitos.length}/${R.length}</div><div class="s">${iguais} batem com o sistema</div></div>
         <div class="kpi"><div class="l">Faltam contar</div><div class="v">${R.length - feitos.length}</div><div class="s">urgentes: ${R.filter(r => r.q == null && r.p === 1).length}</div></div>
@@ -505,7 +557,8 @@
           <button onclick="CT.copiarInv()" style="flex:1">📋 Copiar para o inventário do Avanço</button>
           <button onclick="CT.copiarCont()" style="flex:1">#CONT para a cotação</button>
           <button onclick="CT.baixar()" style="flex:1">⬇ Baixar planilha</button></div>
-        <p class="mut" style="margin:8px 0 0">Inventário: uma linha por item, <i>código;quantidade contada</i>. Antes de gravar no Avanço, confira a lista.</p></div>
+        <p class="mut" style="margin:8px 0 0">${CT.secRes === 'Todas' ? 'Todas as seções' : 'Só a seção <b>' + esc(CT.secRes) + '</b>'}. Inventário: uma linha por item, <i>código;quantidade contada</i>. Antes de gravar no Avanço, confira a lista.</p>
+        ${faltamSec ? `<div class="row" style="margin-top:10px"><button class="warn" onclick="CT.zerarSecao()" style="flex:1">Terminou a seção? Zerar os ${faltamSec} não contados de ${esc(CT.secRes)}</button></div>` : ''}</div>
       <div class="tabs" id="ctResF">
         <button data-r="div" class="${CT.filtroRes === 'div' ? 'on' : ''}">Com diferença</button>
         <button data-r="todos" class="${CT.filtroRes === 'todos' ? 'on' : ''}">Todos contados</button>
@@ -516,16 +569,21 @@
           <td class="num">${fmt(r.s)}</td><td class="num"><b>${fmt(r.q)}</b></td>
           <td class="num ${r.dif > 0 ? 'pos' : r.dif < 0 ? 'neg' : ''}">${r.dif == null ? '—' : (r.dif > 0 ? '+' : '') + fmt(r.dif)}</td>
           <td class="num">${r.dif == null ? '—' : r.cu ? real(r.val) : '<span class="mut">sem custo</span>'}</td></tr>`).join('')}</table>`
-        : '<div class="mut" style="padding:10px">Nada aqui.</div>'}</div>
+        : '<div class="mut" style="padding:10px">Nada aqui.</div>'}${totalVer > 300 ? `<p class="mut" style="margin:8px 0 0">Mostrando os 300 maiores de ${totalVer}. A planilha traz todos.</p>` : ''}</div>
       <div class="card"><b>Lista da contagem</b>
         <p class="mut" style="margin:6px 0">${CT.docLista ? 'Lista importada' : 'Lista de 24/11 que veio no app'} · ${R.length} itens · rodada ${esc(rid())}</p>
         <div class="row"><button onclick="CT.importar()" style="flex:1">Importar nova lista (planilha)</button><button class="warn" onclick="CT.recomecar()" style="flex:1">Recomeçar contagem</button></div>
         <p class="mut" style="margin:8px 0 0">Planilha: colunas código, descrição e estoque. Opcionais: seção, código de barras e urgente (sim/não). Sem a coluna urgente, estoque negativo conta como urgente.</p></div>`;
+    $('#ctResS').onclick = e => { const s = e.target.closest('button')?.dataset.s; if (!s) return; CT.secRes = s; desenharResultado(); };
     $('#ctResF').onclick = e => { const r = e.target.closest('button')?.dataset.r; if (!r) return; CT.filtroRes = r; desenharResultado(); };
   }
 
   async function salvarLista(nova){
-    await S.db.collection('config').doc('contagemLista').set(nova);
+    const txt = nova.itens.map(i => [i.c, String(i.d).replace(/\|/g, '/'), i.s, i.p, String(i.g).replace(/\|/g, '/'), i.ean || '', String(i.o || '').replace(/\|/g, '/')].join('|'));
+    const partes = Math.ceil(txt.length / 2000);
+    for (let i = 0; i < partes; i++) await S.db.collection('config').doc('contagemLista_p' + i).set({txt: txt.slice(i * 2000, (i + 1) * 2000).join('\n'), rodada: nova.rodada});
+    const meta = {...nova}; delete meta.itens; meta.partes = partes; meta.n = txt.length;
+    await S.db.collection('config').doc('contagemLista').set(meta);
   }
   async function importarLista(file){
     const wb = XLSX.read(await file.arrayBuffer(), {type: 'array'});
@@ -535,20 +593,21 @@
     const H = linhas[hi].map(c => String(c).toLowerCase());
     const col = re => H.findIndex(h => re.test(h));
     const cCod = col(/^c[óo]d(igo)?\b(?!.*barra)|interno|^c[óo]d\.?$/), cDesc = col(/descri/), cEst = col(/estoque|saldo|sistema|qtd|quant/),
-      cSec = col(/se[cç][aã]o|grupo|depart|categ|setor/), cEan = col(/barra|ean|gtin/), cUrg = col(/urgen|priori|pedido/);
+      cSec = col(/se[cç][aã]o|grupo|depart|categ|setor/), cEan = col(/barra|ean|gtin/), cUrg = col(/urgen|priori|pedido/), cObs = col(/^obs/);
     if (cCod < 0 || cDesc < 0 || cEst < 0){ toast('A planilha precisa das colunas código, descrição e estoque.', 'err'); return; }
     const vistos = new Set(), novos = [];
     for (const r of linhas.slice(hi + 1)){
       const c = dig(r[cCod]), d = String(r[cDesc]).trim().toUpperCase(); if (!c || !d || vistos.has(c)) continue; vistos.add(c);
-      const s = num(String(r[cEst]).replace(/\.(?=\d{3}(\D|$))/g, '')) || 0;
+      const s = typeof r[cEst] === 'number' ? r[cEst] : (num(String(r[cEst]).replace(/\.(?=\d{3}(\D|$))/g, '')) || 0);
       let ean = cEan >= 0 ? dig(r[cEan]) : ''; if (!ean && window.BX && BX.porCod){ const p = BX.porCod.get(c); if (p) ean = p.ean || ''; }
       const urg = cUrg >= 0 ? /^(s|sim|x|1|urg)/i.test(String(r[cUrg]).trim()) : s < 0;
-      novos.push({c, d, s, p: urg ? 1 : 2, g: cSec >= 0 && String(r[cSec]).trim() ? String(r[cSec]).trim() : 'Geral', ean});
+      novos.push({c, d, s, p: urg ? 1 : 2, g: cSec >= 0 && String(r[cSec]).trim() ? String(r[cSec]).trim() : 'Geral', ean, o: cObs >= 0 ? String(r[cObs]).trim() : ''});
     }
     if (!novos.length){ toast('Nenhum item na planilha.', 'err'); return; }
     novos.sort((a, b) => a.g.localeCompare(b.g) || a.p - b.p);
     const agora = new Date().toISOString();
     confirmar(`Trocar a lista por ${novos.length} itens (${novos.filter(i => i.p === 1).length} urgentes)? A contagem começa do zero.`, 'Trocar lista', async () => {
+      toast('Publicando a lista… (pode levar alguns segundos)', 'warn');
       try{ await salvarLista({rodada: agora.replace(/[:.]/g, '-'), nome: 'Contagem de ' + new Date().toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'}), em: agora, itens: novos}); toast('Lista nova publicada.', 'ok'); }
       catch(e){ toast('Não salvou: ' + e.message, 'err'); }
     });
@@ -557,6 +616,21 @@
   /* ---------- Ações ---------- */
   CT.fecharItem = () => { CT.atual = null; desenharForm(); $('#ctScan')?.focus(); };
   CT.trocarNome = () => { const n = prompt('Seu nome:', localStorage.getItem('bx.func') || ''); if (n && n.trim()){ localStorage.setItem('bx.func', n.trim()); if (window.BX) BX.func = n.trim(); render(); } };
+  CT.zerarSecao = () => {
+    const sec = CT.secRes; const alvo = itens().filter(i => i.g === sec && !contado(i.c));
+    if (!alvo.length) return;
+    confirmar(`Gravar 0 (zero) nos ${alvo.length} itens de ${sec} que ninguém contou? Use só quando a seção inteira já foi contada: o que não foi achado na loja fica zerado.`, 'Zerar não contados', async () => {
+      const agora = new Date().toISOString();
+      try{
+        for (let k = 0; k < alvo.length; k += 400){
+          const b = S.db.batch();
+          alvo.slice(k, k + 400).forEach(i => { const rec = {r: rid(), c: i.c, q: 0, f: CT.fat[i.c] || null, func: 'Gerente (não achado)', t: agora}; CT.cont.set(i.c, rec); b.set(S.db.collection('contagem').doc(rid() + '_' + i.c), rec); });
+          await b.commit();
+        }
+        toast(alvo.length + ' itens de ' + sec + ' zerados.', 'ok'); desenharResultado(); desenharTopo();
+      }catch(e){ toast('Não gravou: ' + e.message, 'err'); }
+    });
+  };
   CT.copiarInv = () => { const R = linhasRes().filter(r => r.q != null); if (!R.length){ toast('Nada contado ainda.', 'warn'); return; } copiar(R.map(r => r.c + ';' + fmt(r.q)).join('\n')); };
   CT.copiarCont = () => { const R = linhasRes().filter(r => r.q != null); if (!R.length){ toast('Nada contado ainda.', 'warn'); return; }
     copiar(`*Contagem Lelê Supermercados*\nData: ${new Date().toLocaleString('pt-BR')}\nItens contados: ${R.length}\n\n#CONT|${R.map(r => r.c + '=' + r.q).join(';')}|FIM`); };
@@ -593,7 +667,7 @@
     if (estrutura){ CT.renderFeito = ''; return render(); }
     desenharTopo();
     if (CT.aba === 'res'){ desenharResultado(); return; }
-    desenharSecs(); itens().forEach(i => atualizarLinha(i.c));
+    desenharSecs(); document.querySelectorAll('#ctLista [data-c]').forEach(r => atualizarLinha(r.dataset.c));
   }
 
   /* ---------- Encaixe no app ---------- */
