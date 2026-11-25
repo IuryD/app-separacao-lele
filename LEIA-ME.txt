@@ -169,3 +169,16 @@ SEGURANÇA – O QUE SABER
 === v15 (24/11/2026) — projeto Perda/Uso e consumo ===
 - Correção automática dos lançamentos "fora da tabela" (roda com o gerente logado) também reconhece pelo nome (ex.: GOIABA -> GOIABA KG 96549, BATATA DOCE -> BATATA DOCE KG 250) e grava código, unidade e custo.
 publicado 24/11
+
+=== v16 (24/11/2026, cache separacao-v20) — Contagem de estoque (itens defasados) ===
+- Painel do gerente: atalho "Contagem de estoque" com o progresso.
+- Link direto para a equipe contar: .../#contagem
+- Código: contagem.js (carregado depois do baixas.js).
+- Equipe bipa (leitor ou câmera) ou busca o item e digita quanto tem; pode contar por fardo.
+  A equipe não vê o estoque do sistema (contagem às cegas). Contagem compartilhada ao vivo.
+- Gerente, aba Resultado: sistema x contado, diferença e valor do ajuste (custo da tabela de produtos),
+  copiar para o inventário do Avanço (código;quantidade), copiar #CONT para a cotação, baixar planilha.
+- Lista: começa com os 209 itens de 24/11 (141 urgentes + 68 estoque alto suspeito).
+  Lista nova: aba Resultado > Importar nova lista (código, descrição, estoque; opcionais seção, código de barras, urgente).
+- Dados: coleção "contagem" (uma por item e rodada) e config/contagemLista.
+- Regra da coleção "contagem" publicada no Firebase em 24/11 (cópia em firestore.rules).

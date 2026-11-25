@@ -59,6 +59,13 @@ service cloud.firestore {
     }
   
 
+    // Contagem de estoque (itens defasados): qualquer aparelho com o app conta e corrige.
+    // So o gerente apaga. A lista fica em config/contagemLista (so o gerente troca).
+    match /contagem/{id} {
+      allow read, create, update: if logado();
+      allow delete: if gerente();
+    }
+
     // Recebimento do hortifruti (pesagem na chegada): qualquer aparelho com o app pesa e apaga.
     match /hortiEntradas/{id} {
       allow read, create, delete: if logado();

@@ -666,6 +666,7 @@
   BX.cancelar = () => { BX.prod = null; renderForm(); $('#bxScan')?.focus(); };
   BX.semCadastro = () => { const n = $('#bxScan').value.trim(); $('#bxScan').value = ''; escolher({cod: '', ean: '', desc: '', un: 'UN', custo: 0, novo: true}); setTimeout(() => { const d = $('#bxDesc'); if (d){ d.value = n.toUpperCase(); } }, 70); };
   BX.apagar = apagar;
+  BX.carregarProdutos = carregarProdutos;
   BX.trocarNome = () => { const n = prompt('Seu nome:', BX.func); if (n && n.trim()){ BX.func = n.trim(); localStorage.setItem('bx.func', BX.func); renderLista(); } };
   BX.importar = () => { const i = document.createElement('input'); i.type = 'file'; i.accept = '.xlsx,.xls,.csv'; i.onchange = () => i.files[0] && importarProdutos(i.files[0]).catch(e => toast('Erro ao importar: ' + e.message, 'err')); i.click(); };
 
