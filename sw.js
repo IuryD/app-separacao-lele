@@ -1,7 +1,7 @@
 // Service worker: deixa o app abrir mesmo com internet fraca no estoque.
 // Sempre tenta a versão nova primeiro; se não tiver internet, usa a cópia salva.
-const CACHE = 'separacao-v22';
-const ARQUIVOS = ['./', './index.html', './config.js', './baixas.js', './contagem.js', './logo-lele.png', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'separacao-v23';
+const ARQUIVOS = ['./', './index.html', './config.js', './baixas.js', './contagem.js', './validade.js', './logo-lele.png', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARQUIVOS)).then(() => self.skipWaiting()));

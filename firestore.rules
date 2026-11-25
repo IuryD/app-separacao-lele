@@ -71,5 +71,12 @@ service cloud.firestore {
       allow read, create, delete: if logado();
       allow update: if gerente();
     }
+
+    // Validade (vencimento na gôndola): qualquer aparelho com o app anota e marca vendido/retirado.
+    // Só o gerente apaga. Separado de "baixas": aqui não se lança perda.
+    match /validade/{id} {
+      allow read, create, update: if logado();
+      allow delete: if gerente();
+    }
   }
 }

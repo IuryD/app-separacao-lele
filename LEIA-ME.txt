@@ -195,3 +195,14 @@ publicado 24/11
 === v18 (25/11/2026, cache separacao-v22) — projeto Be Honest ===
 - Gerente: link "trocar EAN" na linha Lelê de cada item. Troca o EAN do produto Lelê na tabela de-para (vale para os próximos pedidos e para a exportação ao PDV). O EAN novo também é aceito na bipagem.
 - Pedido do dia: Sal Grosso Lebre 1kg -> EAN 7896101711326.
+
+=== v19 (25/11/2026, cache separacao-v23) — projeto Perda/Uso e consumo — Validade ===
+- Nova aba "Validade" na tela inicial (equipe e gerente), separada de Perda e Uso e consumo.
+- Na reposição: bipa/busca o produto, informa a data do lote que vence primeiro e a quantidade.
+  Mesmo produto + mesma data atualiza a quantidade (não duplica). Produto sem cadastro: anota pelo nome.
+- Lista por vencimento com a ação: vencido = retirar · até 3 dias = vender a custo · 4 a 7 dias = 30% · 8 a 15 dias = 15%.
+- Botões "Vendeu" e "Retirei" tiram da lista. "Retirei" oferece abrir a aba Perda (motivo Vencido) para lançar a baixa lá.
+- Aba "Vendidos / retirados" mostra os últimos 30 dias. Só o gerente apaga anotação errada.
+- Link direto: .../#validade · Código: validade.js (carregado depois do contagem.js).
+- Dados: coleção "validade". PRECISA publicar a regra "validade" no Firebase (cópia em firestore.rules).
+
