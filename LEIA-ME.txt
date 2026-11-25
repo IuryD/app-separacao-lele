@@ -213,3 +213,8 @@ publicado 24/11
 - contagem.js: a contagem mostra só os itens URGENTES da lista (compra da semana). Mesma rodada: o que já foi contado continua valendo.
   Lista sem nenhum urgente marcado mostra tudo. "Zerar os não contados" também só mexe nos urgentes.
 
+=== v21 (25/11/2026, cache separacao-v25) — projeto Perda/Uso e consumo — economia na separação ===
+- Tabela de-para fica guardada no celular. Só baixa de novo quando o gerente importa a tabela ou troca um EAN
+  (o app grava config/deparaVer e cada aparelho baixa a tabela uma vez só). Antes, cada abertura do app relia todos os produtos.
+- Separador recebe só os pedidos dos últimos 10 dias. Gerente continua recebendo todos (relatório e acumulado do mês).
+

@@ -211,15 +211,24 @@ async function initStore(){
     S.ligarSep = () => {
       if (S.sepOn || !S.db) return; S.sepOn = true;
       const timer = setTimeout(() => { if(!S.loaded) toast('Ainda não consegui carregar os pedidos. Verifique a internet.', 'warn'); }, 10000);
-      subs.push(S.db.collection('pedidos').onSnapshot({includeMetadataChanges:false}, snap => {
+      // Separador só recebe os pedidos dos últimos 10 dias; o gerente recebe todos (relatório e acumulado do mês).
+      const qPed = S.admin ? S.db.collection('pedidos') : S.db.collection('pedidos').where('criadoEm', '>=', new Date(Date.now() - 10 * 864e5).toISOString());
+      subs.push(qPed.onSnapshot({includeMetadataChanges:false}, snap => {
         S.pedidos = new Map(snap.docs.map(d => [d.id, d.data()]));
         S.loaded = true; clearTimeout(timer); render();
       }, e => toast('Erro ao ler pedidos: ' + e.message, 'err')));
       subs.push(S.db.collection('liberacoes').onSnapshot(snap => {
         S.lib = new Map(snap.docs.map(d => [d.id, d.data()])); render();
       }, () => {}));
-      subs.push(S.db.collection('depara').onSnapshot(snap => {
-        S.depara = new Map(snap.docs.map(d => [d.id, d.data()])); render();
+      // Tabela de-para: fica guardada no aparelho. Só baixa de novo quando o gerente muda algo (config/deparaVer).
+      subs.push(S.db.collection('config').doc('deparaVer').onSnapshot(async d => {
+        const ver = d.exists ? String(d.data().em || '0') : '0';
+        if (lsGet('sep_dpVer', null) === ver){ const g = lsGet('sep_depara', null); if (g && Object.keys(g).length){ if (!S.depara.size){ S.depara = new Map(Object.entries(g)); render(); } return; } }
+        try{
+          const snap = await S.db.collection('depara').get();
+          S.depara = new Map(snap.docs.map(x => [x.id, x.data()]));
+          lsSet('sep_depara', Object.fromEntries(S.depara)); lsSet('sep_dpVer', ver); render();
+        }catch(e){ console.warn('depara', e); }
       }, () => {}));
       subs.push(S.db.collection('fardos').onSnapshot(snap => {
         S.fardos = new Map(snap.docs.map(d => [d.id, d.data()])); render();
@@ -236,6 +245,8 @@ async function initStore(){
   });
 }
 const fsDoc = (col, id) => S.db.collection(col).doc(id);
+// Avisa os aparelhos que a tabela de-para mudou (eles baixam de novo uma vez só)
+const marcarDepara = () => S.db.collection('config').doc('deparaVer').set({em: new Date().toISOString()}).catch(e => console.warn('deparaVer', e));
 
 $('#modeBadge').onclick = () => {
   if (S.mode !== 'db'){ modal(`<b>Modo local</b><p class="mut">Os pedidos ficam salvos só neste aparelho. Para sincronizar entre celulares e liberar com senha de gerente, preencha o Firebase no arquivo config.js (veja o LEIA-ME).</p><div class="row" style="justify-content:flex-end"><button onclick="closeModal()">OK</button></div>`); return; }
@@ -331,7 +342,7 @@ $('#fileDp').addEventListener('change', async ev => {
         try{
           const arr=[...m.entries()];
           for (let i=0;i<arr.length;i+=400){ const b=S.db.batch(); arr.slice(i,i+400).forEach(([k,v])=>b.set(S.db.collection('depara').doc(k), JSON.parse(JSON.stringify(v)))); await b.commit(); }
-          toast('Tabela atualizada: ' + m.size + ' produtos.', 'ok');
+          marcarDepara(); toast('Tabela atualizada: ' + m.size + ' produtos.', 'ok');
         }catch(e){ toast('Não consegui salvar a tabela: ' + (e.code||e.message) + '. Entre como gerente.', 'err'); }
       } else { S.depara = m; lsSet('sep_depara', Object.fromEntries(m)); toast('Tabela atualizada (só neste aparelho).', 'ok'); render(); }
     });
@@ -584,7 +595,7 @@ function editarEanLele(k){
     nd.trocaEan = {de: antigo, para: novo, em: new Date().toISOString()};
     const key = normEan(it.ean);
     if (S.mode === 'db'){
-      try{ await S.db.collection('depara').doc(key).set(nd); }
+      try{ await S.db.collection('depara').doc(key).set(nd); marcarDepara(); }
       catch(e){ toast('Não consegui salvar: ' + (e.code||e.message) + '. Entre como gerente.', 'err'); return; }
     } else { S.depara.set(key, nd); lsSet('sep_depara', Object.fromEntries(S.depara)); }
     S.depara.set(key, nd); toast('EAN trocado: ' + (antigo||'—') + ' → ' + novo, 'ok'); render();
