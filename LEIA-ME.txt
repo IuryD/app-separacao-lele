@@ -191,3 +191,7 @@ publicado 24/11
 - Resultado: filtro por seção (cópia para o inventário e planilha só da seção) e botão "Zerar os não contados" da seção.
 - Lista geral de 24/11: lista_contagem_geral_lele.xlsx (10.165 produtos com estoque no Avanço, por departamento,
   141 urgentes, 405 códigos com nome repetido marcados na Obs). Importar em Contagem > Resultado > Importar nova lista.
+
+=== v18 (25/11/2026, cache separacao-v22) — projeto Be Honest ===
+- Gerente: link "trocar EAN" na linha Lelê de cada item. Troca o EAN do produto Lelê na tabela de-para (vale para os próximos pedidos e para a exportação ao PDV). O EAN novo também é aceito na bipagem.
+- Pedido do dia: Sal Grosso Lebre 1kg -> EAN 7896101711326.

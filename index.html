@@ -557,6 +557,33 @@ function pegarFardo(k){
   persistPedido(p); render(); flashItem(k);
   toast('Fardo: ' + sg.alvo + ' un (' + it.qtd + ' do pedido + ' + sg.faltam + ' a mais).', 'ok');
 }
+/* Trocar o EAN do produto Lelê na tabela de-para (vale para os próximos pedidos) */
+function editarEanLele(k){
+  if (!S.admin) return;
+  const p = S.pedidos.get(S.cur); const it = p?.itens.find(x => x.k === k); const d = it && dp(it.ean); if (!d) return;
+  const ops = opcoesLele(d);
+  modal(`<b>${esc(it.desc)}</b><p class="mut">Novo EAN do produto no Lelê. Vale para este e os próximos pedidos.</p>
+    ${ops.length > 1 ? `<select id="eSel" style="width:100%;font-size:16px;padding:10px;border-radius:10px;margin-bottom:8px">${ops.map((o,i)=>`<option value="${i}">${esc(o.cod)} – ${esc(o.desc)} (${esc(o.ean||'sem EAN')})</option>`).join('')}</select>` : `<p class="mut" style="margin:0 0 8px">${esc(ops[0]?.desc||'')} · atual: ${esc(ops[0]?.ean||'sem EAN')}</p>`}
+    <input id="eIn" inputmode="numeric" placeholder="EAN novo" style="width:100%;font-size:22px;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)">
+    <div class="row" style="margin-top:12px;justify-content:flex-end"><button onclick="closeModal()">Cancelar</button><button class="pri" id="eOk">Salvar</button></div>`);
+  const inp = $('#eIn'); inp.focus();
+  const ok = async () => {
+    const novo = String(inp.value).replace(/\D/g, ''); if (novo.length < 8){ toast('EAN inválido.', 'err'); return; }
+    const i = ops.length > 1 ? Number($('#eSel').value) : 0; closeModal();
+    const nd = JSON.parse(JSON.stringify(d)); let antigo = '';
+    if (i === 0){ antigo = nd.ean_lele || ''; nd.ean_lele = novo; }
+    else { const a = nd.alt[i-1]; antigo = a.ean || ''; a.ean = novo; }
+    nd.aceita = [...new Set([...(nd.aceita||[]), novo])];
+    nd.trocaEan = {de: antigo, para: novo, em: new Date().toISOString()};
+    const key = normEan(it.ean);
+    if (S.mode === 'db'){
+      try{ await S.db.collection('depara').doc(key).set(nd); }
+      catch(e){ toast('Não consegui salvar: ' + (e.code||e.message) + '. Entre como gerente.', 'err'); return; }
+    } else { S.depara.set(key, nd); lsSet('sep_depara', Object.fromEntries(S.depara)); }
+    S.depara.set(key, nd); toast('EAN trocado: ' + (antigo||'—') + ' → ' + novo, 'ok'); render();
+  };
+  $('#eOk').onclick = ok; inp.onkeydown = e => { if (e.key === 'Enter') ok(); };
+}
 function editarFardo(k){
   const p = S.pedidos.get(S.cur); const it = p.itens.find(x => x.k === k); if (!it) return;
   const f = fardoDe(it);
@@ -835,7 +862,7 @@ function renderPedido(app){
     if (it.cat !== lastCat){ h += `<div class="cat">${esc(it.cat)}</div>`; lastCat = it.cat; }
     const s = statusItem(it);
     h += `<div class="item ${s}${s==='pend'&&it.sep>0?' and':''}" id="it-${esc(it.k)}">
-      <div><div class="d">${esc(it.desc)}</div><div class="e">${esc(it.ean)}</div>${it.extra > 0 ? `<span class="extra">+${it.extra} a mais</span>` : ''}${(()=>{ const f = fardoDe(it); if (S.admin) return `<div class="fdtag">Fardo: ${f.tam ? '<b>'+f.tam+'</b>'+(f.origem==='descricao'?' (lido da descrição)':'') : '—'} · <a href="#" onclick="editarFardo('${esc(it.k)}');return false">${f.tam ? 'corrigir' : 'cadastrar'}</a></div>`; return f.tam ? `<div class="fdtag">Fardo: ${f.tam}</div>` : ''; })()}${(S.admin || S.mode !== 'db') ? `<div class="fdtag">Preço: ${precoDe(it) ? '<b>'+brl(precoDe(it))+'</b> · clube '+brl(clubeDe(it)) : '<span style="color:var(--amber)">—</span>'} · <a href="#" onclick="editarPreco('${esc(it.k)}');return false">${precoDe(it) ? 'corrigir' : 'cadastrar'}</a></div>` : ''}${(()=>{ const d=produtoLele(it); if(!S.depara.size) return ''; if(!d) return '<div class="lele novo">● Produto novo – fora da tabela</div>'; if(!d.cod) return '<div class="lele sc">⚠ Sem cadastro no Lelê</div>'; const o=opcoesLele(d); return '<div class="lele">Lelê: '+o.map(x=>esc(x.cod)+' – '+esc(x.desc)).join(' <b>ou</b> ')+'</div>'; })()}</div>
+      <div><div class="d">${esc(it.desc)}</div><div class="e">${esc(it.ean)}</div>${it.extra > 0 ? `<span class="extra">+${it.extra} a mais</span>` : ''}${(()=>{ const f = fardoDe(it); if (S.admin) return `<div class="fdtag">Fardo: ${f.tam ? '<b>'+f.tam+'</b>'+(f.origem==='descricao'?' (lido da descrição)':'') : '—'} · <a href="#" onclick="editarFardo('${esc(it.k)}');return false">${f.tam ? 'corrigir' : 'cadastrar'}</a></div>`; return f.tam ? `<div class="fdtag">Fardo: ${f.tam}</div>` : ''; })()}${(S.admin || S.mode !== 'db') ? `<div class="fdtag">Preço: ${precoDe(it) ? '<b>'+brl(precoDe(it))+'</b> · clube '+brl(clubeDe(it)) : '<span style="color:var(--amber)">—</span>'} · <a href="#" onclick="editarPreco('${esc(it.k)}');return false">${precoDe(it) ? 'corrigir' : 'cadastrar'}</a></div>` : ''}${(()=>{ const d=produtoLele(it); if(!S.depara.size) return ''; if(!d) return '<div class="lele novo">● Produto novo – fora da tabela</div>'; if(!d.cod) return '<div class="lele sc">⚠ Sem cadastro no Lelê</div>'; const o=opcoesLele(d); return '<div class="lele">Lelê: '+o.map(x=>esc(x.cod)+' – '+esc(x.desc)+(x.ean?' <span class="mut">('+esc(x.ean)+')</span>':'')).join(' <b>ou</b> ')+(S.admin?` · <a href="#" onclick="editarEanLele('${esc(it.k)}');return false">trocar EAN</a>`:'')+'</div>'; })()}</div>
       <div class="qty">
         <button ${lock||it.sep<=0?'disabled':''} onclick="setSep(S.pedidos.get(S.cur),'${esc(it.k)}',${it.sep-1},${!!it.falta})" aria-label="menos">−</button>
         <div class="n" onclick="${lock?'':`editQtd('${esc(it.k)}')`}"><b>${it.sep}</b><span class="mut">/${it.qtd}</span>${it.extra>0?`<div style="font-size:12px;color:var(--blue);font-weight:700">+${it.extra}</div>`:''}</div>
