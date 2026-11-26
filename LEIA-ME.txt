@@ -218,3 +218,9 @@ publicado 24/11
   (o app grava config/deparaVer e cada aparelho baixa a tabela uma vez só). Antes, cada abertura do app relia todos os produtos.
 - Separador recebe só os pedidos dos últimos 10 dias. Gerente continua recebendo todos (relatório e acumulado do mês).
 
+=== v22 (26/11/2026, cache separacao-v26) — projeto Perda/Uso e consumo — app escondido desliga do banco ===
+- Medição de 26/11: ~1 milhão de leituras/dia, 30 a 60 mil por hora inclusive de madrugada, com 8 a 11 aparelhos conectados a noite toda.
+  Uma aba aberta e visível quase não lê (1 leitura/min). O gasto vem de aparelhos com o app em segundo plano, que reconectam toda hora.
+- index.html: app escondido por 2 minutos desliga a conexão com o Firestore; ao voltar para a tela religa sozinho.
+- ATENÇÃO: em 26/11 o Netlify ainda servia a v19 (v20 e v21 estavam no GitHub mas não publicadas). Conferir a publicação automática.
+

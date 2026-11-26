@@ -193,6 +193,14 @@ async function initStore(){
     S.auth = firebase.auth();
     S.db = firebase.firestore();
     try{ await S.db.enablePersistence({synchronizeTabs:true}); }catch(e){}
+    // App escondido (tela apagada, minimizado, outra aba) por 2 minutos: desliga a conexão com o banco.
+    // Celular em segundo plano reconecta toda hora e relê os dados; isso gastava a cota a noite inteira.
+    // Ao voltar para a tela religa sozinho (o que foi gravado nesse meio tempo sobe na hora).
+    let pausaT = null;
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden){ clearTimeout(pausaT); pausaT = setTimeout(() => { S.offPausa = true; S.db.disableNetwork().catch(() => {}); }, 120000); }
+      else { clearTimeout(pausaT); if (S.offPausa){ S.offPausa = false; S.db.enableNetwork().catch(() => {}); } }
+    });
     S.mode = 'db';
   }catch(e){
     toast('Sem internet para conectar ao servidor. Abrindo em modo local.', 'warn');
