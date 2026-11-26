@@ -234,3 +234,6 @@ publicado 24/11
 === v27 (26/11/2026) — projeto Perda/Uso e consumo ===
 - Botões do hortifruti com os códigos certos: maçã nacional 233 (era 7227) e pimenta de cheiro 3650 (era 428). Códigos antigos viram apelido, então lançamentos velhos acham o produto e o custo.
 - Código de barras secundário 7622210530066 = BISC. OREO ORIG 18GR (100840), que não vem na lista exportada do Avanço.
+
+=== v28 (26/11/2026) — projeto Perda/Uso e consumo ===
+- Código interno 96978 = ACUCAR VASCONCELOS 5KG (7898949924272): digitar o código acha o produto e o lançamento já sai com o código interno.

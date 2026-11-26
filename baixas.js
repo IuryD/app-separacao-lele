@@ -204,6 +204,9 @@
     // Códigos de barras que existem no Avanço mas não vêm na lista exportada (código de barras secundário)
     const EAN_EXTRA = {'7622210530066': {cod: '100840', desc: 'BISC. OREO ORIG 18GR', un: 'UN', custo: 0.59}};
     for (const [e, x] of Object.entries(EAN_EXTRA)){ if (!BX.porEan.has(e)){ const p = BX.porCod.get(x.cod) || {...x, ean: e}; BX.porEan.set(e, p); if (!BX.porCod.has(x.cod)) BX.porCod.set(x.cod, p); } }
+    // Código interno de produtos que só vêm com código de barras na lista do Avanço (digitar o código também acha)
+    const COD_EAN = {'96978': '7898949924272'};
+    for (const [cod, e] of Object.entries(COD_EAN)){ const p = BX.porEan.get(e); if (p){ if (!p.cod) p.cod = cod; BX.porCod.set(cod, p); } }
     aplicarCustosHorti();
     religarFora();
     if (S.view === 'baixas' || S.view === 'menu') render();
