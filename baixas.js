@@ -25,7 +25,7 @@
 210|BATATA MONALISA KG|KG|H
 213|LIMAO THAITI KG|KG|H
 212|LARANJA RIO KG|KG|H
-7227|MACA NACIONAL KG|KG|H
+233|MACA NACIONAL KG|KG|H
 217|ABOBORA CABOTIA KG|KG|H
 234|MARACUJA KG|KG|H
 231|PIMENTAO VERDE KG|KG|H
@@ -39,7 +39,7 @@
 268|GENGIBRE KG|KG|H
 250|BATATA DOCE KG|KG|H
 96549|GOIABA KG|KG|H
-428|PIMENTA DE CHEIRO PCT|UN|H
+3650|PIMENTA DE CHEIRO PCT|UN|H
 6546|BROCOLIS JAPONES UN|UN|H
 6559|TOMATE CEREJA BD|UN|H
 295|MORANGO BD|UN|H
@@ -198,6 +198,12 @@
         });
       });
     }catch(e){ console.warn('produtosLele', e); }
+    // Códigos antigos que o Avanço trocou (lançamentos velhos continuam achando o produto)
+    const ALIAS_COD = {'7227': '233', '428': '3650'};
+    for (const [velho, novo] of Object.entries(ALIAS_COD)){ const p = BX.porCod.get(novo); if (p) BX.porCod.set(velho, p); }
+    // Códigos de barras que existem no Avanço mas não vêm na lista exportada (código de barras secundário)
+    const EAN_EXTRA = {'7622210530066': {cod: '100840', desc: 'BISC. OREO ORIG 18GR', un: 'UN', custo: 0.59}};
+    for (const [e, x] of Object.entries(EAN_EXTRA)){ if (!BX.porEan.has(e)){ const p = BX.porCod.get(x.cod) || {...x, ean: e}; BX.porEan.set(e, p); if (!BX.porCod.has(x.cod)) BX.porCod.set(x.cod, p); } }
     aplicarCustosHorti();
     religarFora();
     if (S.view === 'baixas' || S.view === 'menu') render();

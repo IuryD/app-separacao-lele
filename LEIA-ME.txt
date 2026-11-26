@@ -230,3 +230,7 @@ publicado 24/11
 - O Netlify (capable-squirrel-dfd4f1.netlify.app) pausou as publicações por falta de créditos e ficou parado na v19. Não usar mais.
 - Os dados continuam no mesmo Firebase: nada se perdeu. Cada celular entra de novo uma vez (nome, PIN, gerente).
 
+
+=== v27 (26/11/2026) — projeto Perda/Uso e consumo ===
+- Botões do hortifruti com os códigos certos: maçã nacional 233 (era 7227) e pimenta de cheiro 3650 (era 428). Códigos antigos viram apelido, então lançamentos velhos acham o produto e o custo.
+- Código de barras secundário 7622210530066 = BISC. OREO ORIG 18GR (100840), que não vem na lista exportada do Avanço.
