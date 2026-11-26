@@ -224,3 +224,9 @@ publicado 24/11
 - index.html: app escondido por 2 minutos desliga a conexão com o Firestore; ao voltar para a tela religa sozinho.
 - ATENÇÃO: em 26/11 o Netlify ainda servia a v19 (v20 e v21 estavam no GitHub mas não publicadas). Conferir a publicação automática.
 
+=== 26/11/2026 — ENDEREÇO NOVO ===
+- O app passou a ser publicado pelo GitHub Pages: https://iuryd.github.io/app-separacao-lele/
+  (links diretos: .../#contagem, .../#validade, .../#baixas, .../#horti)
+- O Netlify (capable-squirrel-dfd4f1.netlify.app) pausou as publicações por falta de créditos e ficou parado na v19. Não usar mais.
+- Os dados continuam no mesmo Firebase: nada se perdeu. Cada celular entra de novo uma vez (nome, PIN, gerente).
+
