@@ -237,3 +237,6 @@ publicado 24/11
 
 === v28 (26/11/2026) — projeto Perda/Uso e consumo ===
 - Código interno 96978 = ACUCAR VASCONCELOS 5KG (7898949924272): digitar o código acha o produto e o lançamento já sai com o código interno.
+
+=== v29 (26/11/2026) — projeto Perda/Uso e consumo ===
+- sw.js busca os arquivos do app com cache 'no-cache': o GitHub Pages manda guardar por 10 min, então mudanças demoravam até 10 min para aparecer. Agora o navegador confere com o servidor a cada abertura (barato: só baixa de novo se mudou).

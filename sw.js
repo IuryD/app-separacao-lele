@@ -1,6 +1,6 @@
 // Service worker: deixa o app abrir mesmo com internet fraca no estoque.
 // Sempre tenta a versão nova primeiro; se não tiver internet, usa a cópia salva.
-const CACHE = 'separacao-v28';
+const CACHE = 'separacao-v29';
 const ARQUIVOS = ['./', './index.html', './config.js', './baixas.js', './contagem.js', './validade.js', './logo-lele.png', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -28,7 +28,7 @@ self.addEventListener('fetch', e => {
   }
   if (e.request.method !== 'GET' || url.origin !== location.origin) return; // Firebase e CDNs passam direto
   e.respondWith(
-    fetch(e.request).then(r => {
+    fetch(e.request, {cache: 'no-cache'}).then(r => {
       const copia = r.clone();
       caches.open(CACHE).then(c => c.put(e.request, copia));
       return r;
