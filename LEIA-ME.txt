@@ -251,3 +251,4 @@ publicado 24/11
 === v33 (27/11/2026) — projeto Be Honest ===
 - Tabela de-para mudou de lugar no Firestore: coleção depara2 (a antiga depara ficou sem regra, ninguém lê). Motivo: a versão antiga do Netlify (v19) continuava aberta em algum aparelho lendo tudo o dia todo (~1,2 milhão de leituras/dia). Sem a coleção antiga, a versão velha para de funcionar e não gasta mais.
 - firestore.rules: match /depara2/{id}.
+- 27/11/2026: site capable-squirrel-dfd4f1 excluído do Netlify. O app fica só em https://iuryd.github.io/app-separacao-lele/
