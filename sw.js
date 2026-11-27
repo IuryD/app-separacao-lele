@@ -1,6 +1,6 @@
 // Service worker: deixa o app abrir mesmo com internet fraca no estoque.
 // Sempre tenta a versão nova primeiro; se não tiver internet, usa a cópia salva.
-const CACHE = 'separacao-v29';
+const CACHE = 'separacao-v30';
 const ARQUIVOS = ['./', './index.html', './config.js', './baixas.js', './contagem.js', './validade.js', './logo-lele.png', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

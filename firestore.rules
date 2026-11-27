@@ -6,7 +6,7 @@ service cloud.firestore {
 
     function logado()  { return request.auth != null; }
     function gerente() {
-      return logado() && request.auth.token.email in ['iury707@gmail.com'];
+      return logado() && request.auth.token.email in ['iury707@gmail.com', 'alesandrosegismundo1990@gmail.com'];
     }
 
     // Pedidos: qualquer aparelho com o app lê e marca a separação.

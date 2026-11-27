@@ -10,7 +10,7 @@ window.APP_CONFIG = {
   // E-mail(s) de quem pode LIBERAR pedidos (gerente).
   // Tem que ser o mesmo e-mail criado no Firebase > Authentication > Usuários
   // e o mesmo que está nas regras do Firestore.
-  gerentes: ["iury707@gmail.com"],
+  gerentes: ["iury707@gmail.com", "alesandrosegismundo1990@gmail.com"],
 
   // Projeto Firebase "separacao-lele" (essas chaves podem ficar no site, são públicas
   // por natureza; quem protege os dados são as regras de segurança do Firestore).

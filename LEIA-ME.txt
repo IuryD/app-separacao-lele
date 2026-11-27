@@ -240,3 +240,6 @@ publicado 24/11
 
 === v29 (26/11/2026) — projeto Perda/Uso e consumo ===
 - sw.js busca os arquivos do app com cache 'no-cache': o GitHub Pages manda guardar por 10 min, então mudanças demoravam até 10 min para aparecer. Agora o navegador confere com o servidor a cada abertura (barato: só baixa de novo se mudou).
+
+=== v30 (26/11/2026) — projeto Be Honest ===
+- Novo gerente: alesandrosegismundo1990@gmail.com (config.js e firestore.rules). As regras precisam ser publicadas no Firebase > Firestore > Regras, e a conta criada em Authentication > Usuários.
