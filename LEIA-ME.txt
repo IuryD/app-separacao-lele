@@ -247,3 +247,7 @@ publicado 24/11
 === v32 (26/11/2026) — projeto Perda/Uso e consumo ===
 - Uso e consumo / Limpeza: botão PANO XADREZ DISTR BC 45X65CM (79189, custo R$ 4,90), que é o pano de chão usado na loja (vem na nota da BC Distribuidora).
 - Códigos internos ligados aos códigos de barras: 79189, 90033 (pano xadrez 60x80) e 92597 (pano Proeza).
+
+=== v33 (27/11/2026) — projeto Be Honest ===
+- Tabela de-para mudou de lugar no Firestore: coleção depara2 (a antiga depara ficou sem regra, ninguém lê). Motivo: a versão antiga do Netlify (v19) continuava aberta em algum aparelho lendo tudo o dia todo (~1,2 milhão de leituras/dia). Sem a coleção antiga, a versão velha para de funcionar e não gasta mais.
+- firestore.rules: match /depara2/{id}.

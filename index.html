@@ -233,7 +233,7 @@ async function initStore(){
         const ver = d.exists ? String(d.data().em || '0') : '0';
         if (lsGet('sep_dpVer', null) === ver){ const g = lsGet('sep_depara', null); if (g && Object.keys(g).length){ if (!S.depara.size){ S.depara = new Map(Object.entries(g)); render(); } return; } }
         try{
-          const snap = await S.db.collection('depara').get();
+          const snap = await S.db.collection('depara2').get();
           S.depara = new Map(snap.docs.map(x => [x.id, x.data()]));
           lsSet('sep_depara', Object.fromEntries(S.depara)); lsSet('sep_dpVer', ver); render();
         }catch(e){ console.warn('depara', e); }
@@ -349,7 +349,7 @@ $('#fileDp').addEventListener('change', async ev => {
       if (S.mode === 'db'){
         try{
           const arr=[...m.entries()];
-          for (let i=0;i<arr.length;i+=400){ const b=S.db.batch(); arr.slice(i,i+400).forEach(([k,v])=>b.set(S.db.collection('depara').doc(k), JSON.parse(JSON.stringify(v)))); await b.commit(); }
+          for (let i=0;i<arr.length;i+=400){ const b=S.db.batch(); arr.slice(i,i+400).forEach(([k,v])=>b.set(S.db.collection('depara2').doc(k), JSON.parse(JSON.stringify(v)))); await b.commit(); }
           marcarDepara(); toast('Tabela atualizada: ' + m.size + ' produtos.', 'ok');
         }catch(e){ toast('Não consegui salvar a tabela: ' + (e.code||e.message) + '. Entre como gerente.', 'err'); }
       } else { S.depara = m; lsSet('sep_depara', Object.fromEntries(m)); toast('Tabela atualizada (só neste aparelho).', 'ok'); render(); }
@@ -603,7 +603,7 @@ function editarEanLele(k){
     nd.trocaEan = {de: antigo, para: novo, em: new Date().toISOString()};
     const key = normEan(it.ean);
     if (S.mode === 'db'){
-      try{ await S.db.collection('depara').doc(key).set(nd); marcarDepara(); }
+      try{ await S.db.collection('depara2').doc(key).set(nd); marcarDepara(); }
       catch(e){ toast('Não consegui salvar: ' + (e.code||e.message) + '. Entre como gerente.', 'err'); return; }
     } else { S.depara.set(key, nd); lsSet('sep_depara', Object.fromEntries(S.depara)); }
     S.depara.set(key, nd); toast('EAN trocado: ' + (antigo||'—') + ' → ' + novo, 'ok'); render();

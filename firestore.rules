@@ -17,7 +17,7 @@ service cloud.firestore {
     }
 
     // Tabela de-para (EAN Be Honest -> produto Lelê): todos leem, só o gerente atualiza.
-    match /depara/{id} {
+    match /depara2/{id} {
       allow read: if logado();
       allow write: if gerente();
     }
