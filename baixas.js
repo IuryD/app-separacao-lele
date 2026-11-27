@@ -63,6 +63,7 @@
 5019|BOLO REDONDO SABORES|UN|P
 5096|BOLO EM TIRA CENOURA PROMO|UN|P
 5085|SALGADO PROMO 1UN|UN|P
+79189|PANO XADREZ DISTR BC 45X65CM|UN|L|4.90
 21385|VASSOURA LAVA TUDO|UN|L|15.52
 30140|VASSOURA SUPER PELO PLUS COM CAPA MENDONÇA|UN|L|14.22
 89219|AGUA SANIT Q BOA 5L|UN|L|12.89
@@ -205,7 +206,7 @@
     const EAN_EXTRA = {'7622210530066': {cod: '100840', desc: 'BISC. OREO ORIG 18GR', un: 'UN', custo: 0.59}};
     for (const [e, x] of Object.entries(EAN_EXTRA)){ if (!BX.porEan.has(e)){ const p = BX.porCod.get(x.cod) || {...x, ean: e}; BX.porEan.set(e, p); if (!BX.porCod.has(x.cod)) BX.porCod.set(x.cod, p); } }
     // Código interno de produtos que só vêm com código de barras na lista do Avanço (digitar o código também acha)
-    const COD_EAN = {'96978': '7898949924272'};
+    const COD_EAN = {'96978': '7898949924272', '79189': '7898933206605', '90033': '7898933206698', '92597': '7898113014761'};
     for (const [cod, e] of Object.entries(COD_EAN)){ const p = BX.porEan.get(e); if (p){ if (!p.cod) p.cod = cod; BX.porCod.set(cod, p); } }
     aplicarCustosHorti();
     religarFora();

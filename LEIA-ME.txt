@@ -243,3 +243,7 @@ publicado 24/11
 
 === v30 (26/11/2026) — projeto Be Honest ===
 - Novo gerente: alessandrosegismundo1990@gmail.com (config.js e firestore.rules). As regras precisam ser publicadas no Firebase > Firestore > Regras, e a conta criada em Authentication > Usuários.
+
+=== v32 (26/11/2026) — projeto Perda/Uso e consumo ===
+- Uso e consumo / Limpeza: botão PANO XADREZ DISTR BC 45X65CM (79189, custo R$ 4,90), que é o pano de chão usado na loja (vem na nota da BC Distribuidora).
+- Códigos internos ligados aos códigos de barras: 79189, 90033 (pano xadrez 60x80) e 92597 (pano Proeza).
